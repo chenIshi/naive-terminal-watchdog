@@ -47,10 +47,24 @@ awk '{
 ```
 
 ## Usage
+
+### Capture data trace
+
+In my case, I am using `script` to capture the terminal output.
+
+### Offline Analyze
+
+Before running the analyze script, remember to check the `src/config.json`
+You need to define the location of the field, which include finding out the point got updated.
+The length of the written data doesn't matter, at least for now, since I am using REGEX to determin the ending point.
+
+> Most of the time, the update happens at the BEGINNING of the updating field.
+
 ```bash
 cd src
 ./watchdog.sh ../data/pktgen-dpdk-dry-run.txt
 ```
+*Replace the ../data/pktgen-dpdk-dry-run.txt with your trace*
 
 ## Reference
 Thanks to the [Poor man's Profiler](https://poormansprofiler.org), although there isn't any connection between these two, I am greatly motivated by the profiler thus want to make this little tool then. His example tells me that even a simple bash script can still be very useful.
