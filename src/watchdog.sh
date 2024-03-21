@@ -1,5 +1,31 @@
 #!/bin/bash
 
+# Read configuration values from JSON file
+read_config() {
+    config_file="$1"
+
+    # Check if config file exists
+    if [ ! -f "$config_file" ]; then
+        echo "Error: Config file '$config_file' not found."
+        exit 1
+    fi
+
+    # Read JSON file and parse values
+    while IFS= read -r line; do
+        # Parse JSON key-value pairs
+        name=$(echo "$line" | jq -r '.name')
+        column=$(echo "$line" | jq -r '.column')
+        row=$(echo "$line" | jq -r '.row')
+        output=$(echo "$line" | jq -r '.output')
+        
+        # Store values in associative arrays
+        names+=("$name")
+        columns+=("$column")
+        rows+=("$row")
+        outputs+=("$output")
+    done < <(jq -c '.[]' "$config_file")
+}
+
 # Function to preprocess the input string
 preprocess_input() {
     input_string="$1"
@@ -10,33 +36,67 @@ preprocess_input() {
     echo "$processed_string"
 }
 
+initialize_file() {
+    for out in "${outputs[@]}"; do
+        # Create the file if it doesn't exist
+        touch "$out"
+        # Truncate the file to remove its contents
+        : > "$out"
+    done
+}
+
 # Function to extract values
 extract_values() {
     input_string="$1"
 
-    # Use awk to extract values between the patterns
-    awk '{
-        while (match($0, /\^\[\[5;22H  ([0-9,]*)\^\[\[/)) {
-            value = substr($0, RSTART + 10, RLENGTH - 14); 
-            print value; 
-            $0 = substr($0, RSTART + RLENGTH)
-        } 
-    }' <<< "$input_string"
+    # Loop through configuration arrays
+    for ((i = 0; i < ${#names[@]}; i++)); do
+        name="${names[$i]}"
+        column="${columns[$i]}"
+        row="${rows[$i]}"
+        output="${outputs[$i]}"
+        
+        # Construct pattern using configuration values
+        pattern="\^\[\[$column;$row\H"
+
+        # Use awk to extract values between the patterns
+        awk -v pattern="$pattern" '{
+            while (match($0, pattern "  ([0-9,]*)\\^\\[\\[")) {
+                value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
+                print value >> "'"$output"'"; 
+                $0 = substr($0, RSTART + RLENGTH)
+            } 
+        }' <<< "$input_string"
+    done
+
 }
 
 # Main function
 main() {
+    config_file="config.json"
+
+    declare -a names columns rows outputs
+    read_config "$config_file"
+
     # Check if input file is provided
     if [ $# -ne 1 ]; then
         echo "Usage: $0 <input_file>"
         exit 1
     fi
 
+    initialize_file
+
     input_file="$1"
 
     # Check if input file exists
     if [ ! -f "$input_file" ]; then
         echo "Error: Input file '$input_file' not found."
+        exit 1
+    fi
+
+    # Check if config file exists
+    if [ ! -f "$config_file" ]; then
+        echo "Error: Config file '$config_file' not found."
         exit 1
     fi
 

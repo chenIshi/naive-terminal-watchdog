@@ -1,0 +1,14 @@
+[
+    {
+        "name": "pkts/s rx",
+        "column": 4,
+        "row": 22,
+        "output": "../res/rx.txt"
+    },
+    {
+        "name": "pkts/s tx",
+        "column": 5,
+        "row": 22,
+        "output": "../res/tx.txt"
+    }
+]
