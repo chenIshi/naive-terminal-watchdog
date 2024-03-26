@@ -74,11 +74,11 @@
             output="${outputs[$i]}"
             
             # Construct pattern using configuration values
-            pattern="\^\[\[$column;$row\H"
+            pattern="\\^\[\[${column};${row}\H"
 
             # Use awk to extract values between the patterns
-            awk -v pattern="$pattern" '{
-                while (match($0, pattern "  ([0-9,]*)\\^\\[\\[")) {
+            mawk -v pattern="$pattern" '{
+                while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  ([0-9,]*)\\^\\[\\[")) {
                     value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
                     print value >> "'"$output"'"; 
                     $0 = substr($0, RSTART + RLENGTH)
