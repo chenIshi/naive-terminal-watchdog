@@ -82,6 +82,7 @@
             mawk -v pattern="$pattern" '{
                 while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
                     value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
+                    gsub(",", "", value); # Remove commas from the value
                     print value >> "'"$output"'"; 
                     $0 = substr($0, RSTART + RLENGTH)
                 } 
