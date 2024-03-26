@@ -69,13 +69,22 @@ cd src
 ## Notices
 
 - Environment Requirements
-You might need to install the `jq` tools to parse json configuration files.
+You might need to install the `jq`, `mawk` tools to parse json configuration files.
+For example, on ubuntu you can install `jq` with `sudo apt install jq`
+
 - Input file type
 Although there should be no difference in content given different file extension,
 it seems that different extension could have their own interpretation for escape
 characters, which is the basic target we are looking for in our script.
 It is possible to adopt corresponding characters to these file extentions. But I 
 am just a poor developer, and I need food to do so.
+
+- Modifying *config.json* on demand
+If you want to add more capturing point, define them in *config.json*.
+  - **name**: Not really used now
+  - **column** & **row**: Coordinates of capturing points
+  - **regex**: Expected value format in REGEX.
+  - **output**: Output file name, place under the *res* directory (created on runtime)
 
 ## Reference
 Thanks to the [Poor man's Profiler](https://poormansprofiler.org), although there isn't any connection between these two, I am greatly motivated by the profiler thus want to make this little tool then. His example tells me that even a simple bash script can still be very useful.

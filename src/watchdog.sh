@@ -33,12 +33,14 @@
             name=$(echo "$line" | jq -r '.name')
             column=$(echo "$line" | jq -r '.column')
             row=$(echo "$line" | jq -r '.row')
+            regex=$(echo "$line" | jq -r '.regex')
             output=$(echo "$line" | jq -r '.output')
             
             # Store values in associative arrays
             names+=("$name")
             columns+=("$column")
             rows+=("$row")
+            regexs+=("$regex")
             outputs+=("$output")
         done < <(jq -c '.[]' "$config_file")
     }
@@ -71,14 +73,14 @@
             name="${names[$i]}"
             column="${columns[$i]}"
             row="${rows[$i]}"
+            regex="${regexs[$i]}"
             output="${outputs[$i]}"
             
             # Construct pattern using configuration values
             pattern="\\^\[\[${column};${row}\H"
-
             # Use awk to extract values between the patterns
             mawk -v pattern="$pattern" '{
-                while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  ([0-9,]*)\\^\\[\\[")) {
+                while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
                     value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
                     print value >> "'"$output"'"; 
                     $0 = substr($0, RSTART + RLENGTH)
@@ -92,8 +94,10 @@
     main() {
         config_file="config.json"
 
-        declare -a names columns rows outputs
+        declare -a names columns rows regexs outputs
         read_config "$config_file"
+
+        mkdir -p ../res
 
         # Check if input file is provided
         if [ $# -ne 1 ]; then
