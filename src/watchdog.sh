@@ -1,111 +1,131 @@
 #!/bin/bash
 
-# Read configuration values from JSON file
-read_config() {
-    config_file="$1"
+# set -x
 
-    # Check if config file exists
-    if [ ! -f "$config_file" ]; then
-        echo "Error: Config file '$config_file' not found."
-        exit 1
-    fi
+# Subshell can make sure variables defined can only live during the script exec
+(
+    # Function to check file type based on file extension
+    check_file_type() {
+        filename="$1"
+        case "$filename" in
+            *.txt) echo "Reading $filename" ;;
+            *) 
+                echo "No support for file extension other than txt." 
+                echo "Each extention has its own interpretation for escape character."
+                exit 1
+                ;;
+        esac
+    }
 
-    # Read JSON file and parse values
-    while IFS= read -r line; do
-        # Parse JSON key-value pairs
-        name=$(echo "$line" | jq -r '.name')
-        column=$(echo "$line" | jq -r '.column')
-        row=$(echo "$line" | jq -r '.row')
-        output=$(echo "$line" | jq -r '.output')
-        
-        # Store values in associative arrays
-        names+=("$name")
-        columns+=("$column")
-        rows+=("$row")
-        outputs+=("$output")
-    done < <(jq -c '.[]' "$config_file")
-}
+    # Read configuration values from JSON file
+    read_config() {
+        config_file="$1"
 
-# Function to preprocess the input string
-preprocess_input() {
-    input_string="$1"
+        # Check if config file exists
+        if [ ! -f "$config_file" ]; then
+            echo "Error: Config file '$config_file' not found."
+            exit 1
+        fi
 
-    # Truncate variable width spaces to two spaces
-    processed_string=$(echo "$input_string" | sed 's/ \{2,\}/  /g')
+        # Read JSON file and parse values
+        while IFS= read -r line; do
+            # Parse JSON key-value pairs
+            name=$(echo "$line" | jq -r '.name')
+            column=$(echo "$line" | jq -r '.column')
+            row=$(echo "$line" | jq -r '.row')
+            output=$(echo "$line" | jq -r '.output')
+            
+            # Store values in associative arrays
+            names+=("$name")
+            columns+=("$column")
+            rows+=("$row")
+            outputs+=("$output")
+        done < <(jq -c '.[]' "$config_file")
+    }
 
-    echo "$processed_string"
-}
+    # Function to preprocess the input string
+    preprocess_input() {
+        input_string="$1"
 
-initialize_file() {
-    for out in "${outputs[@]}"; do
-        # Create the file if it doesn't exist
-        touch "$out"
-        # Truncate the file to remove its contents
-        : > "$out"
-    done
-}
+        # Truncate variable width spaces to two spaces
+        processed_string=$(echo "$input_string" | sed 's/ \{2,\}/  /g')
 
-# Function to extract values
-extract_values() {
-    input_string="$1"
+        echo "$processed_string"
+    }
 
-    # Loop through configuration arrays
-    for ((i = 0; i < ${#names[@]}; i++)); do
-        name="${names[$i]}"
-        column="${columns[$i]}"
-        row="${rows[$i]}"
-        output="${outputs[$i]}"
-        
-        # Construct pattern using configuration values
-        pattern="\^\[\[$column;$row\H"
+    initialize_file() {
+        for out in "${outputs[@]}"; do
+            # Create the file if it doesn't exist
+            touch "$out"
+            # Truncate the file to remove its contents
+            : > "$out"
+        done
+    }
 
-        # Use awk to extract values between the patterns
-        awk -v pattern="$pattern" '{
-            while (match($0, pattern "  ([0-9,]*)\\^\\[\\[")) {
-                value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
-                print value >> "'"$output"'"; 
-                $0 = substr($0, RSTART + RLENGTH)
-            } 
-        }' <<< "$input_string"
-    done
+    # Function to extract values
+    extract_values() {
+        input_string="$1"
 
-}
+        # Loop through configuration arrays
+        for ((i = 0; i < ${#names[@]}; i++)); do
+            name="${names[$i]}"
+            column="${columns[$i]}"
+            row="${rows[$i]}"
+            output="${outputs[$i]}"
+            
+            # Construct pattern using configuration values
+            pattern="\^\[\[$column;$row\H"
 
-# Main function
-main() {
-    config_file="config.json"
+            # Use awk to extract values between the patterns
+            awk -v pattern="$pattern" '{
+                while (match($0, pattern "  ([0-9,]*)\\^\\[\\[")) {
+                    value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
+                    print value >> "'"$output"'"; 
+                    $0 = substr($0, RSTART + RLENGTH)
+                } 
+            }' <<< "$input_string"
+        done
 
-    declare -a names columns rows outputs
-    read_config "$config_file"
+    }
 
-    # Check if input file is provided
-    if [ $# -ne 1 ]; then
-        echo "Usage: $0 <input_file>"
-        exit 1
-    fi
+    # Main function
+    main() {
+        config_file="config.json"
 
-    initialize_file
+        declare -a names columns rows outputs
+        read_config "$config_file"
 
-    input_file="$1"
+        # Check if input file is provided
+        if [ $# -ne 1 ]; then
+            echo "Usage: $0 <input_file>"
+            exit 1
+        fi
 
-    # Check if input file exists
-    if [ ! -f "$input_file" ]; then
-        echo "Error: Input file '$input_file' not found."
-        exit 1
-    fi
+        initialize_file
 
-    # Check if config file exists
-    if [ ! -f "$config_file" ]; then
-        echo "Error: Config file '$config_file' not found."
-        exit 1
-    fi
+        input_file="$1"
 
-    # Read input file and preprocess each line
-    cat -v "$input_file" | while IFS= read -r line; do
-        processed_line=$(preprocess_input "$line")
-        extract_values "$processed_line"
-    done
-}
+        # Check if input file exists
+        if [ ! -f "$input_file" ]; then
+            echo "Error: Input file '$input_file' not found."
+            exit 1
+        fi
 
-# Call main function with command line arguments
-main "$@"
+        # Check if config file exists
+        if [ ! -f "$config_file" ]; then
+            echo "Error: Config file '$config_file' not found."
+            exit 1
+        fi
+
+        check_file_type "$input_file"
+
+        # Read input file and preprocess each line
+        cat -v "$input_file" | while IFS= read -r line; do
+            processed_line=$(preprocess_input "$line")
+            extract_values "$processed_line"
+        done
+    }
+
+    # Call main function with command line arguments
+    main "$@"
+)
