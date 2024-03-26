@@ -1,4 +1,4 @@
-# naive-terminal-watchdog
+# Naive Terminal Watchdog
 A simple terminal output analyzer for interactive environments with in-place update.
 
 ## Why do you need this
@@ -68,18 +68,18 @@ cd src
 
 ## Notices
 
-- Environment Requirements
+- Environment Requirements  
 You might need to install the `jq`, `mawk` tools to parse json configuration files.
 For example, on ubuntu you can install `jq` with `sudo apt install jq`
 
-- Input file type
+- Input file type  
 Although there should be no difference in content given different file extension,
 it seems that different extension could have their own interpretation for escape
 characters, which is the basic target we are looking for in our script.
 It is possible to adopt corresponding characters to these file extentions. But I 
 am just a poor developer, and I need food to do so.
 
-- Modifying *config.json* on demand
+- Modifying *config.json* on demand  
 If you want to add more capturing point, define them in *config.json*.
   - **name**: Not really used now
   - **column** & **row**: Coordinates of capturing points
