@@ -3,6 +3,7 @@
         "name": "chan 1 rx/tx",
         "column": 6,
         "row": 44,
+        "color": -1,
         "regex": "([0-9,]*)/([0-9,]*)",
         "output": "../res/chan1mbps.txt"
     },
@@ -10,7 +11,16 @@
         "name": "pkts/s tx",
         "column": 5,
         "row": 22,
+        "color": -1,
         "regex": "([0-9,]*)",
         "output": "../res/tx.txt"
+    },
+    {
+        "name": "pkts/s tx 2",
+        "column": 6,
+        "row": 22,
+        "color": 32,
+        "regex": "[0-9]+/[0-9]+",
+        "output": "../res/tx2.txt"
     }
 ]

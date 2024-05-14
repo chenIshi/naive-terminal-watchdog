@@ -33,6 +33,7 @@
             name=$(echo "$line" | jq -r '.name')
             column=$(echo "$line" | jq -r '.column')
             row=$(echo "$line" | jq -r '.row')
+            color=$(echo "$line" | jq -r '.color')
             regex=$(echo "$line" | jq -r '.regex')
             output=$(echo "$line" | jq -r '.output')
             
@@ -40,6 +41,7 @@
             names+=("$name")
             columns+=("$column")
             rows+=("$row")
+            colors+=("$color")
             regexs+=("$regex")
             outputs+=("$output")
         done < <(jq -c '.[]' "$config_file")
@@ -73,20 +75,58 @@
             name="${names[$i]}"
             column="${columns[$i]}"
             row="${rows[$i]}"
+            color="${colors[$i]}"
             regex="${regexs[$i]}"
             output="${outputs[$i]}"
             
             # Construct pattern using configuration values
-            pattern="\\^\[\[${column};${row}\H"
-            # Use awk to extract values between the patterns
-            mawk -v pattern="$pattern" '{
-                while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
-                    value = substr($0, RSTART + length(pattern) - 2, RLENGTH - length(pattern) - 1); 
-                    gsub(",", "", value); # Remove commas from the value
-                    print value >> "'"$output"'"; 
-                    $0 = substr($0, RSTART + RLENGTH)
-                } 
-            }' <<< "$input_string"
+            if (( color < 0 ));then
+                pattern="^[[${column};${row}H"
+                # Use awk to extract values between the patterns
+                mawk -v pattern="$pattern" '{
+                    while (match($0, "\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
+                        value = substr($0, RSTART + length(pattern), RLENGTH - length(pattern) - 3); 
+                        gsub(",", "", value); # Remove commas from the value
+                        print value >> "'"$output"'"; 
+                        $0 = substr($0, RSTART + RLENGTH)
+                    } 
+                }' <<< "$input_string"
+                
+                pattern="^[[K^[[${column};${row}H"
+                mawk -v pattern="$pattern" '{
+                    while (match($0, "\\^\\[\\[K\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
+                        value = substr($0, RSTART + length(pattern), RLENGTH - length(pattern) - 3); 
+                        gsub(",", "", value); # Remove commas from the value
+                        print value >> "'"$output"'"; 
+                        $0 = substr($0, RSTART + RLENGTH)
+                    } 
+                }' <<< "$input_string"
+            else
+                pattern="^[[0;${color}m^[[${column};${row}H"
+                # Use awk to extract values between the patterns
+                mawk -v pattern="$pattern" '{
+                    while (match($0, "\\^\\[\\[0;'"$color"'m\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
+                        value = substr($0, RSTART + length(pattern), RLENGTH - length(pattern) - 3); 
+                        gsub(",", "", value); # Remove commas from the value
+                        print value >> "'"$output"'"; 
+                        $0 = substr($0, RSTART + RLENGTH)
+                    } 
+                }' <<< "$input_string"
+
+                pattern="^[[K^[[0;${color}m^[[${column};${row}H"
+                # Use awk to extract values between the patterns
+                mawk -v pattern="$pattern" '{
+                    while (match($0, "\\^\\[\\[K\\^\\[\\[0;'"$color"'m\\^\\[\\['"$column"';'"$row"'H" "  '"$regex"'\\^\\[\\[")) {
+                        value = substr($0, RSTART + length(pattern), RLENGTH - length(pattern) - 3); 
+                        gsub(",", "", value); # Remove commas from the value
+                        print value >> "'"$output"'"; 
+                        $0 = substr($0, RSTART + RLENGTH)
+                    } 
+                }' <<< "$input_string"
+            fi
+
+
+            
         done
 
     }
@@ -95,7 +135,7 @@
     main() {
         config_file="config.json"
 
-        declare -a names columns rows regexs outputs
+        declare -a names columns rows colors regexs outputs
         read_config "$config_file"
 
         mkdir -p ../res
